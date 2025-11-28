@@ -42,7 +42,7 @@ public class SignupOrchestrator {
                                 requestMapper.toSignupResponse(authSignupResponse.getData(),
                                         userGrpcMapper.toResponse(userGrpcResponse)))
                         .onErrorResume(e -> {
-                            log.error("Error creating user, rolling back auth user with id: {}", id, e);
+                            log.error("Error creating user, rolling back auth user with id: {}", id);
                             return rollback(id).then(Mono.error(e));
                         })
                 )
@@ -55,7 +55,7 @@ public class SignupOrchestrator {
 
     private Mono<Auth.DeleteUserResponse> rollback(UUID id) {
         return authServiceGrpcClient.delete(id)
-                .doOnError(e -> log.error("Error rolling back signing up user with id: {}", id, e))
+                .doOnError(e -> log.error("Error rolling back signing up user with id: {}", id))
                 .onErrorResume(e -> Mono.empty());
     }
 }
