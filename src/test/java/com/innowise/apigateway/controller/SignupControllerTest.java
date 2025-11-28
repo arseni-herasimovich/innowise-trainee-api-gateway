@@ -69,9 +69,11 @@ public class SignupControllerTest {
         registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].port", () -> wm.getPort());
         registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].secure", () -> false);
 
-        registry.add("grpc.server.port", () -> 1);
+        registry.add("grpc.server.port", () -> 0);
         registry.add("grpc.client.user-service.address", () -> "static://localhost:" + wm.getPort());
         registry.add("grpc.client.user-service.negotiation-type", () -> "plaintext");
+        registry.add("grpc.client.auth-service.address", () -> "static://localhost:" + wm.getPort());
+        registry.add("grpc.client.auth-service.negotiation-type", () -> "plaintext");
     }
 
     WireMockGrpcService userService;
@@ -320,7 +322,18 @@ public class SignupControllerTest {
         authService.verify(0, "DeleteUser");
     }
 
-    private AuthSignupRequest getSaveCredentialsRequest(UUID id) {
+    @Test
+    @DisplayName("Should return notfound when accessing non-existent endpoint")
+    void givenNonExistentEndpoint_whenRequest_thenNotFoundResponse() {
+        client.get()
+                .uri("/notexistingendpoint")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false);
+    }
+
+   private AuthSignupRequest getSaveCredentialsRequest(UUID id) {
         return new AuthSignupRequest(id, "TEST@EMAIL", "Test_Password1");
     }
 
