@@ -1,0 +1,42 @@
+name: CI Pipeline
+on: push
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v5.0.0
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B clean compile
+
+      - name: Testing
+        run: mvn -B test
+
+      - name: Official SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
+
+      - name: Build Docker images
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          outputs: type=tar,dest=api-gateway-image.tar
+
+      - name: Push Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: api-gateway-image.tar
