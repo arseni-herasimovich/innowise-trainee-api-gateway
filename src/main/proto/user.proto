@@ -1,0 +1,22 @@
+syntax = "proto3";
+package com.innowise.userservice.generated;
+
+service UserService {
+  rpc CreateUser(UserCreateRequest) returns (UserResponse);
+}
+
+message UserCreateRequest {
+  string id = 1;
+  string name = 2;
+  string surname = 3;
+  string birth_date = 4;
+  string email = 5;
+}
+
+message UserResponse {
+  string id = 1;
+  string name = 2;
+  string surname = 3;
+  string birth_date = 4;
+  string email = 5;
+}
