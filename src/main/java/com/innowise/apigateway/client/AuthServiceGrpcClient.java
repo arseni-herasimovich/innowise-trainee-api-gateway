@@ -9,7 +9,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
-import java.util.UUID;
 
 @Service
 public class AuthServiceGrpcClient {
@@ -20,9 +19,9 @@ public class AuthServiceGrpcClient {
     @Value("${client.default-timeout:10s}")
     private Duration duration;
 
-    public Mono<Auth.DeleteUserResponse> delete(UUID userId) {
+    public Mono<Auth.DeleteUserResponse> delete(String userId) {
         return Mono.fromCallable(() -> authServiceBlockingStub.deleteUser(
-                Auth.DeleteUserRequest.newBuilder().setId(userId.toString()).build()))
+                        Auth.DeleteUserRequest.newBuilder().setUserId(userId).build()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .timeout(duration);
     }

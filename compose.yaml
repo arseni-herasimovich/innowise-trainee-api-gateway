@@ -8,6 +8,8 @@ services:
       - '8080:8080'
     networks:
       - backend-net
+    environment:
+      - APP_LOGGING_LEVEL=debug
 
   user-service:
     image: arseniherasimovichinnowise/user-service:latest

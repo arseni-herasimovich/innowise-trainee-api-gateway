@@ -8,9 +8,9 @@ import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface UserGrpcMapper {
-    default User.UserCreateRequest toGrpcRequest(UserCreateRequest request) {
+    default User.UserCreateRequest toGrpcRequest(UserCreateRequest request, String userId) {
         return User.UserCreateRequest.newBuilder()
-                .setId(request.id().toString())
+                .setUserId(userId)
                 .setName(request.name())
                 .setSurname(request.surname())
                 .setBirthDate(request.birthDate().toString())

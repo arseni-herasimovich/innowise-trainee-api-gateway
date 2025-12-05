@@ -30,3 +30,6 @@ grpc:
     user-service:
       address: discovery:///user-service
       negotiation-type: plaintext
+logging:
+  level:
+    com.innowise: ${APP_LOGGING_LEVEL:info}

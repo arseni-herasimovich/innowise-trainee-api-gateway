@@ -10,5 +10,5 @@ message DeleteUserResponse {
 }
 
 message DeleteUserRequest {
-  string id = 1;
+  string userId = 1;
 }

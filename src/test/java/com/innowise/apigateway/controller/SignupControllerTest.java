@@ -9,7 +9,6 @@ import com.innowise.apigateway.dto.ApiResponse;
 import com.innowise.apigateway.dto.AuthSignupRequest;
 import com.innowise.apigateway.dto.AuthSignupResponse;
 import com.innowise.apigateway.dto.SignupRequest;
-import com.innowise.apigateway.util.IdGenerator;
 import com.innowise.authservice.generated.Auth;
 import com.innowise.userservice.generated.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +21,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.wiremock.grpc.GrpcExtensionFactory;
 import org.wiremock.grpc.dsl.WireMockGrpcService;
@@ -34,7 +32,6 @@ import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.mockito.Mockito.when;
 import static org.wiremock.grpc.dsl.WireMockGrpc.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -45,9 +42,6 @@ public class SignupControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @MockitoBean
-    private IdGenerator idGenerator;
 
     @RegisterExtension
     static WireMockExtension wm = WireMockExtension.newInstance()
@@ -94,14 +88,13 @@ public class SignupControllerTest {
     @Test
     @DisplayName("Should sign up when all services available and request is valid")
     void givenValidRequest_whenSignup_thenReturnSignupResponse() throws JsonProcessingException {
-        var id = UUID.randomUUID();
-        when(idGenerator.generate()).thenReturn(id);
+        var userId = UUID.randomUUID().toString();
 
-        var saveCredentialsRequest = getSaveCredentialsRequest(id);
-        var saveCredentialsResponse = getSaveCredentialsResponse(id);
+        var saveCredentialsRequest = getSaveCredentialsRequest();
+        var saveCredentialsResponse = getSaveCredentialsResponse(userId);
 
-        var saveUserRequest = getSaveUserRequestBuilder(id);
-        var saveUserResponse = getSaveUserResponseBuilder(id);
+        var saveUserRequest = getSaveUserRequestBuilder(userId);
+        var saveUserResponse = getSaveUserResponseBuilder(userId);
 
         wm.stubFor(WireMock.post("/api/v1/auth/credentials")
                 .withRequestBody(equalToJson(objectMapper.writeValueAsString(saveCredentialsRequest)))
@@ -136,7 +129,7 @@ public class SignupControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data").isNotEmpty()
-                .jsonPath("$.data.id").isEqualTo(id)
+                .jsonPath("$.data.userId").isEqualTo(userId)
                 .jsonPath("$.data.email").isEqualTo(request.email())
                 .jsonPath("$.data.name").isEqualTo(request.name())
                 .jsonPath("$.data.birthDate").isEqualTo(request.birthDate())
@@ -151,13 +144,12 @@ public class SignupControllerTest {
     @Test
     @DisplayName("Should rollback creating user when user service is not available")
     void givenUnavailableUserService_whenSignup_thenRollback() throws JsonProcessingException {
-        var id = UUID.randomUUID();
-        when(idGenerator.generate()).thenReturn(id);
+        var userId = UUID.randomUUID().toString();
 
-        var saveCredentialsRequest = getSaveCredentialsRequest(id);
-        var saveCredentialsResponse = getSaveCredentialsResponse(id);
+        var saveCredentialsRequest = getSaveCredentialsRequest();
+        var saveCredentialsResponse = getSaveCredentialsResponse(userId);
 
-        var saveUserRequest = getSaveUserRequestBuilder(id);
+        var saveUserRequest = getSaveUserRequestBuilder(userId);
 
         wm.stubFor(WireMock.post("/api/v1/auth/credentials")
                 .withRequestBody(equalToJson(objectMapper.writeValueAsString(saveCredentialsRequest)))
@@ -177,7 +169,7 @@ public class SignupControllerTest {
 
         authService.stubFor(
                 method("DeleteUser")
-                        .withRequestMessage(equalToMessage(getDeleteUserRequest(id)))
+                        .withRequestMessage(equalToMessage(getDeleteUserRequest(userId)))
                         .willReturn(message(getDeleteUserResponse(true)))
         );
 
@@ -207,10 +199,7 @@ public class SignupControllerTest {
     @Test
     @DisplayName("Should return conflict when register existing user")
     void givenConflictRequest_whenSignup_thenReturnConflictResponse() throws JsonProcessingException {
-        var id = UUID.randomUUID();
-        when(idGenerator.generate()).thenReturn(id);
-
-        var saveCredentialsRequest = getSaveCredentialsRequest(id);
+        var saveCredentialsRequest = getSaveCredentialsRequest();
         var saveCredentialsResponse = ApiResponse.error("User already exists");
 
         wm.stubFor(WireMock.post("/api/v1/auth/credentials")
@@ -333,16 +322,16 @@ public class SignupControllerTest {
                 .jsonPath("$.success").isEqualTo(false);
     }
 
-   private AuthSignupRequest getSaveCredentialsRequest(UUID id) {
-        return new AuthSignupRequest(id, "TEST@EMAIL", "Test_Password1");
+   private AuthSignupRequest getSaveCredentialsRequest() {
+        return new AuthSignupRequest("TEST@EMAIL", "Test_Password1");
     }
 
-    private ApiResponse<AuthSignupResponse> getSaveCredentialsResponse(UUID id) {
-        var saveUserRequest = getSaveUserRequestBuilder(id);
+    private ApiResponse<AuthSignupResponse> getSaveCredentialsResponse(String userId) {
+        var saveUserRequest = getSaveUserRequestBuilder(userId);
         return ApiResponse.success(
                 "Credentials saved successfully",
                 new AuthSignupResponse(
-                        id,
+                        userId,
                         saveUserRequest.getEmail(),
                         "ROLE_USER",
                         Instant.now(), Instant.now()
@@ -350,28 +339,28 @@ public class SignupControllerTest {
         );
     }
 
-    private User.UserCreateRequest.Builder getSaveUserRequestBuilder(UUID id) {
+    private User.UserCreateRequest.Builder getSaveUserRequestBuilder(String userId) {
         return User.UserCreateRequest.newBuilder()
-                .setId(id.toString())
                 .setEmail("TEST@EMAIL")
                 .setName("TEST_NAME")
                 .setSurname("TEST_SURNAME")
-                .setBirthDate(LocalDate.now().minusDays(1).toString());
+                .setBirthDate(LocalDate.now().minusDays(1).toString())
+                .setUserId(userId);
     }
 
-    private User.UserResponse.Builder getSaveUserResponseBuilder(UUID id) {
-        var saveUserRequest = getSaveUserRequestBuilder(id);
+    private User.UserResponse.Builder getSaveUserResponseBuilder(String userId) {
+        var saveUserRequest = getSaveUserRequestBuilder(userId);
         return User.UserResponse.newBuilder()
-                .setId(saveUserRequest.getId())
                 .setEmail(saveUserRequest.getEmail())
                 .setName(saveUserRequest.getName())
                 .setSurname(saveUserRequest.getSurname())
-                .setBirthDate(saveUserRequest.getBirthDate());
+                .setBirthDate(saveUserRequest.getBirthDate())
+                .setUserId(saveUserRequest.getUserId());
     }
 
-    private Auth.DeleteUserRequest getDeleteUserRequest(UUID id) {
+    private Auth.DeleteUserRequest getDeleteUserRequest(String userId) {
         return Auth.DeleteUserRequest.newBuilder()
-                .setId(id.toString())
+                .setUserId(userId)
                 .build();
     }
 
