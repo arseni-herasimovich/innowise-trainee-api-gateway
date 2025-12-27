@@ -7,33 +7,50 @@ spring:
         webflux:
           routes:
             - id: user-service
-              uri: lb://user-service
+              uri: ${USER_SERVICE_URL:lb://user-service}
               predicates:
                 - Path=/api/v1/users/**, /api/v1/cards/**
             - id: auth-service
-              uri: lb://auth-service
+              uri: ${AUTH_SERVICE_URL:lb://auth-service}
               predicates:
                 - Path=/api/v1/auth/**
             - id: order-service
-              uri: lb://order-service
+              uri: ${ORDER_SERVICE_URL:lb://order-service}
               predicates:
                 - Path=/api/v1/orders/**, /api/v1/items/**
             - id: payment-service
-              uri: lb://payment-service
+              uri: ${PAYMENT_SERVICE_URL:lb://payment-service}
               predicates:
                 - Path=/api/v1/payments/**
 eureka:
   client:
+    enabled: ${EUREKA_ENABLED:true}
     service-url:
-      defaultZone: http://discovery-service:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+services:
+  auth-service-url: ${AUTH_SERVICE_URL:http://localhost:8080}
+
 grpc:
   client:
     auth-service:
-      address: discovery:///auth-service
+      address: ${AUTH_GRPC_ADDR:discovery:///auth-service}
       negotiation-type: plaintext
     user-service:
-      address: discovery:///user-service
+      address: ${USER_GRPC_ADDR:discovery:///user-service}
       negotiation-type: plaintext
 logging:
   level:
     com.innowise: ${APP_LOGGING_LEVEL:info}
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -57,11 +57,8 @@ public class SignupControllerTest {
     static void discoveryProps(DynamicPropertyRegistry registry) {
         registry.add("eureka.client.enabled", () -> false);
 
-        registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].instanceId", () -> "auth1");
-        registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].serviceId", () -> "auth-service");
-        registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].host", () -> "localhost");
-        registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].port", () -> wm.getPort());
-        registry.add("spring.cloud.discovery.client.simple.instances.auth-service[0].secure", () -> false);
+        String wireMockUrl = "http://localhost:" + wm.getPort();
+        registry.add("AUTH_SERVICE_URL", () -> wireMockUrl);
 
         registry.add("grpc.server.port", () -> 0);
         registry.add("grpc.client.user-service.address", () -> "static://localhost:" + wm.getPort());

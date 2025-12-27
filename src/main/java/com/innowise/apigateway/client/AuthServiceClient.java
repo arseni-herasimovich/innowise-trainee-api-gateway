@@ -18,13 +18,16 @@ public class AuthServiceClient {
     @Value("${client.default-timeout:10s}")
     private Duration duration;
 
-    public AuthServiceClient(WebClient.Builder webClient) {
-        this.webClient = webClient.build();
+    @Value("${services.auth-service-url}")
+    private String authServiceUrl;
+
+    public AuthServiceClient() {
+        this.webClient = WebClient.builder().build();
     }
 
     public Mono<ApiResponse<AuthSignupResponse>> signup(AuthSignupRequest request) {
         return webClient.post()
-                .uri("http://auth-service/api/v1/auth/credentials")
+                .uri(authServiceUrl + "/api/v1/auth/credentials")
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ApiResponse<AuthSignupResponse>>() {})
