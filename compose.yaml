@@ -10,9 +10,10 @@ services:
       - backend-net
     environment:
       - APP_LOGGING_LEVEL=debug
+      - EUREKA_URL=http://discovery-service:8761/eureka/
 
   user-service:
-    image: arseniherasimovichinnowise/user-service:latest
+    image: arseniherasimovichinnowise/user-service
     depends_on:
       - user-service-db
       - user-service-redis
@@ -20,15 +21,13 @@ services:
       - backend-net
       - user-service-net
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_SECONDARY_PROFILE=dev
-      - APP_LOGGING_LEVEL=debug
       - DB_HOST=user-service-db
-      - DB_USER=${USER_DB_USER}
+      - DB_USERNAME=${USER_DB_USERNAME}
       - DB_PASSWORD=${USER_DB_PASSWORD}
       - DB_NAME=${USER_DB_NAME}
       - REDIS_HOST=user-service-redis
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_URL=http://discovery-service:8761/eureka/
 
   user-service-db:
     image: postgres:15
@@ -38,7 +37,7 @@ services:
       - user-service-net
     environment:
       POSTGRES_DB: ${USER_DB_NAME}
-      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_USER: ${USER_DB_USERNAME}
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
 
   user-service-redis:
@@ -61,56 +60,51 @@ services:
       - EUREKA_CLIENT_FETCH_REGISTRY=false
 
   order-service:
-    image: arseniherasimovichinnowise/order-service:latest
+    image: arseniherasimovichinnowise/order-service
     depends_on:
       - order-service-db
     networks:
       - backend-net
       - order-service-net
     environment:
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-0:9090,kafka-1:9090,kafka-2:9090
-      - SPRING_PROFILES_ACTIVE=docker
-      - APP_LOGGING_LEVEL=debug
       - DB_HOST=order-service-db
-      - DB_USER=${ORDER_DB_USER}
+      - DB_USERNAME=${ORDER_DB_USERNAME}
       - DB_PASSWORD=${ORDER_DB_PASSWORD}
       - DB_NAME=${ORDER_DB_NAME}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_URL=http://discovery-service:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-0:9090,kafka-1:9090,kafka-2:9090
 
   order-service-db:
     image: postgres:15
     environment:
       POSTGRES_DB: ${ORDER_DB_NAME}
-      POSTGRES_USER: ${ORDER_DB_USER}
+      POSTGRES_USER: ${ORDER_DB_USERNAME}
       POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
     networks:
       - order-service-net
     volumes:
       - order-service-postgres-data:/var/lib/postgresql/data
 
-
   auth-service:
-    image: arseniherasimovichinnowise/auth-service:latest
+    image: arseniherasimovichinnowise/auth-service
     depends_on:
       - auth-service-db
     networks:
       - backend-net
       - auth-service-net
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=auth-service-db
-      - DB_USER=${AUTH_DB_USER}
+      - DB_USERNAME=${AUTH_DB_USERNAME}
       - DB_PASSWORD=${AUTH_DB_PASSWORD}
       - DB_NAME=${AUTH_DB_NAME}
-      - APP_LOGGING_LEVEL=debug
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_URL=http://discovery-service:8761/eureka/
       - JWT_SECRET=${AUTH_JWT_SECRET}
 
   auth-service-db:
     image: postgres:15
     environment:
       POSTGRES_DB: ${AUTH_DB_NAME}
-      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_USER: ${AUTH_DB_USERNAME}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
     networks:
       - auth-service-net
@@ -118,12 +112,13 @@ services:
       - auth-service-postgres-data:/var/lib/postgresql/data
 
   payment-service:
-    image: arseniherasimovichinnowise/payment-service:latest
+    image: arseniherasimovichinnowise/payment-service
     networks:
       - payment-service-net
       - backend-net
     environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-0:9090,kafka-1:9090,kafka-2:9090
+      KAFKA_BOOTSTRAP_SERVERS: kafka-0:9090,kafka-1:9090,kafka-2:9090
+      EUREKA_URL: http://discovery-service:8761/eureka
       MONGO_USERNAME: ${MONGO_USERNAME}
       MONGO_PASSWORD: ${MONGO_PASSWORD}
       MONGO_DATABASE: ${MONGO_DATABASE}
